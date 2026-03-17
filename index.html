@@ -1,252 +1,304 @@
-import json
-from pathlib import Path
-import pandas as pd
-from datetime import datetime
 
-
-class WebPageGenerator:
-    def __init__(self, title="陈大爷信息统计"):
-        self.title = title
-        self.sections = []
-
-    def add_text_section(self, title, content, icon="📄"):
-        """添加文本板块"""
-        section = {
-            'type': 'text',
-            'title': title,
-            'content': content,
-            'icon': icon
-        }
-        self.sections.append(section)
-
-    def add_chart_section(self, title, chart_data, chart_type='bar', icon="📊"):
-        """添加图表板块"""
-        section = {
-            'type': 'chart',
-            'title': title,
-            'data': chart_data,
-            'chart_type': chart_type,
-            'icon': icon
-        }
-        self.sections.append(section)
-
-    def add_table_section(self, title, dataframe, icon="📋"):
-        """添加表格板块"""
-        section = {
-            'type': 'table',
-            'title': title,
-            'data': dataframe.to_dict('records'),
-            'columns': dataframe.columns.tolist(),
-            'icon': icon
-        }
-        self.sections.append(section)
-
-    def add_metric_section(self, title, metrics, icon="📈"):
-        """添加指标板块"""
-        section = {
-            'type': 'metrics',
-            'title': title,
-            'metrics': metrics,
-            'icon': icon
-        }
-        self.sections.append(section)
-
-    def generate_html(self, filename="dashboard.html"):
-        """生成HTML文件"""
-
-        # HTML模板
-        html_template = """
         <!DOCTYPE html>
         <html lang="zh-CN">
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>{title}</title>
+            <title>陈大爷信息统计</title>
             <style>
-                * {{
+                * {
                     margin: 0;
                     padding: 0;
                     box-sizing: border-box;
-                }}
+                }
 
-                body {{
+                body {
                     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     min-height: 100vh;
                     padding: 20px;
-                }}
+                }
 
-                .container {{
+                .container {
                     max-width: 1400px;
                     margin: 0 auto;
-                }}
+                }
 
-                .header {{
+                .header {
                     background: white;
                     border-radius: 15px;
                     padding: 30px;
                     margin-bottom: 30px;
                     box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-                }}
+                }
 
-                .header h1 {{
+                .header h1 {
                     color: #333;
                     font-size: 2.5em;
                     margin-bottom: 10px;
-                }}
+                }
 
-                .header .date {{
+                .header .date {
                     color: #666;
                     font-size: 1.1em;
-                }}
+                }
 
-                .grid {{
+                .grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
                     gap: 25px;
                     margin-bottom: 25px;
-                }}
+                }
 
-                .section {{
+                .section {
                     background: white;
                     border-radius: 15px;
                     padding: 25px;
                     box-shadow: 0 10px 40px rgba(0,0,0,0.1);
                     transition: transform 0.3s ease;
-                }}
+                }
 
-                .section:hover {{
+                .section:hover {
                     transform: translateY(-5px);
-                }}
+                }
 
-                .section-title {{
+                .section-title {
                     display: flex;
                     align-items: center;
                     margin-bottom: 20px;
                     padding-bottom: 15px;
                     border-bottom: 2px solid #f0f0f0;
-                }}
+                }
 
-                .section-title .icon {{
+                .section-title .icon {
                     font-size: 2em;
                     margin-right: 15px;
-                }}
+                }
 
-                .section-title h2 {{
+                .section-title h2 {
                     color: #333;
                     font-size: 1.5em;
                     font-weight: 600;
-                }}
+                }
 
                 /* 文本板块样式 */
-                .text-content {{
+                .text-content {
                     color: #555;
                     line-height: 1.8;
                     font-size: 1.1em;
-                }}
+                }
 
                 /* 指标板块样式 */
-                .metrics-grid {{
+                .metrics-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
                     gap: 15px;
-                }}
+                }
 
-                .metric-card {{
+                .metric-card {
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     color: white;
                     padding: 20px;
                     border-radius: 10px;
                     text-align: center;
-                }}
+                }
 
-                .metric-value {{
+                .metric-value {
                     font-size: 2em;
                     font-weight: bold;
                     margin: 10px 0;
-                }}
+                }
 
-                .metric-label {{
+                .metric-label {
                     font-size: 0.9em;
                     opacity: 0.9;
-                }}
+                }
 
                 /* 表格样式 */
-                table {{
+                table {
                     width: 100%;
                     border-collapse: collapse;
-                }}
+                }
 
-                th {{
+                th {
                     background: #f8f9fa;
                     padding: 12px;
                     text-align: left;
                     font-weight: 600;
                     color: #333;
-                }}
+                }
 
-                td {{
+                td {
                     padding: 12px;
                     border-bottom: 1px solid #f0f0f0;
                     color: #555;
-                }}
+                }
 
-                tr:hover {{
+                tr:hover {
                     background: #f8f9fa;
-                }}
+                }
 
                 /* 图表容器 */
-                .chart-container {{
+                .chart-container {
                     height: 300px;
                     position: relative;
-                }}
+                }
 
                 /* 简单的条形图 */
-                .bar-chart {{
+                .bar-chart {
                     display: flex;
                     align-items: flex-end;
                     height: 250px;
                     gap: 20px;
                     padding: 20px 0;
-                }}
+                }
 
-                .bar-item {{
+                .bar-item {
                     flex: 1;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                }}
+                }
 
-                .bar {{
+                .bar {
                     width: 100%;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     border-radius: 8px 8px 0 0;
                     transition: height 0.3s ease;
                     min-height: 4px;
-                }}
+                }
 
-                .bar-label {{
+                .bar-label {
                     margin-top: 10px;
                     font-size: 0.9em;
                     color: #666;
-                }}
+                }
 
-                @media (max-width: 768px) {{
-                    .grid {{
+                @media (max-width: 768px) {
+                    .grid {
                         grid-template-columns: 1fr;
-                    }}
-                }}
+                    }
+                }
             </style>
         </head>
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>{title}</h1>
-                    <div class="date">生成时间：{date}</div>
+                    <h1>陈大爷信息统计</h1>
+                    <div class="date">生成时间：2026-03-17 17:26:05</div>
                 </div>
 
                 <div class="grid">
-                    {sections}
+                    
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">📄</span>
+                <h2>项目概述</h2>
+            </div>
+            <div class="text-content">
+                这是一个基于小马学习Python生成的数据可视化看板的第一步尝试。
+            </div>
+        </div>
+        
+
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">📈</span>
+                <h2>关键指标</h2>
+            </div>
+            <div class="metrics-grid">
+                
+            <div class="metric-card">
+                <div class="metric-label">总消息</div>
+                <div class="metric-value">1,234</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">微博条数</div>
+                <div class="metric-value">892</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">黑子热搜</div>
+                <div class="metric-value">23.5%</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">CPF热搜</div>
+                <div class="metric-value">¥45,678</div>
+            </div>
+            
+            </div>
+        </div>
+        
+
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">📊</span>
+                <h2>周访问量统计</h2>
+            </div>
+            
+            <div class="chart-container">
+                <div class="bar-chart">
+                    
+                <div class="bar-item">
+                    <div class="bar" style="height: 60.0%;"></div>
+                    <div class="bar-label">周一: 120</div>
+                </div>
+                
+                <div class="bar-item">
+                    <div class="bar" style="height: 75.0%;"></div>
+                    <div class="bar-label">周二: 150</div>
+                </div>
+                
+                <div class="bar-item">
+                    <div class="bar" style="height: 90.0%;"></div>
+                    <div class="bar-label">周三: 180</div>
+                </div>
+                
+                <div class="bar-item">
+                    <div class="bar" style="height: 85.0%;"></div>
+                    <div class="bar-label">周四: 170</div>
+                </div>
+                
+                <div class="bar-item">
+                    <div class="bar" style="height: 100.0%;"></div>
+                    <div class="bar-label">周五: 200</div>
+                </div>
+                
+                <div class="bar-item">
+                    <div class="bar" style="height: 95.0%;"></div>
+                    <div class="bar-label">周六: 190</div>
+                </div>
+                
+                <div class="bar-item">
+                    <div class="bar" style="height: 80.0%;"></div>
+                    <div class="bar-label">周日: 160</div>
+                </div>
+                
+                </div>
+            </div>
+            
+        </div>
+        
+
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">📋</span>
+                <h2>产品销售数据</h2>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr><th>产品</th><th>销量</th><th>收入</th><th>库存</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>产品A</td><td>1200</td><td>24000</td><td>150</td></tr><tr><td>产品B</td><td>950</td><td>19000</td><td>80</td></tr><tr><td>产品C</td><td>2100</td><td>42000</td><td>200</td></tr><tr><td>产品D</td><td>850</td><td>17000</td><td>120</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
                 </div>
             </div>
 
@@ -256,178 +308,4 @@ class WebPageGenerator:
             </script>
         </body>
         </html>
-        """
-
-        # 生成各个板块
-        sections_html = []
-        for section in self.sections:
-            if section['type'] == 'text':
-                sections_html.append(self._render_text_section(section))
-            elif section['type'] == 'chart':
-                sections_html.append(self._render_chart_section(section))
-            elif section['type'] == 'table':
-                sections_html.append(self._render_table_section(section))
-            elif section['type'] == 'metrics':
-                sections_html.append(self._render_metrics_section(section))
-
-        # 填充模板
-        html_content = html_template.format(
-            title=self.title,
-            date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            sections='\n'.join(sections_html)
-        )
-
-        # 保存文件
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-
-        print(f"网页已生成：{filename}")
-        return filename
-
-    def _render_text_section(self, section):
-        return f"""
-        <div class="section">
-            <div class="section-title">
-                <span class="icon">{section['icon']}</span>
-                <h2>{section['title']}</h2>
-            </div>
-            <div class="text-content">
-                {section['content']}
-            </div>
-        </div>
-        """
-
-    def _render_metrics_section(self, section):
-        metrics_html = []
-        for label, value in section['metrics'].items():
-            metrics_html.append(f"""
-            <div class="metric-card">
-                <div class="metric-label">{label}</div>
-                <div class="metric-value">{value}</div>
-            </div>
-            """)
-
-        return f"""
-        <div class="section">
-            <div class="section-title">
-                <span class="icon">{section['icon']}</span>
-                <h2>{section['title']}</h2>
-            </div>
-            <div class="metrics-grid">
-                {''.join(metrics_html)}
-            </div>
-        </div>
-        """
-
-    def _render_table_section(self, section):
-        # 生成表格头部
-        headers = ''.join([f"<th>{col}</th>" for col in section['columns']])
-
-        # 生成表格行
-        rows = []
-        for row in section['data']:
-            cells = ''.join([f"<td>{row[col]}</td>" for col in section['columns']])
-            rows.append(f"<tr>{cells}</tr>")
-
-        return f"""
-        <div class="section">
-            <div class="section-title">
-                <span class="icon">{section['icon']}</span>
-                <h2>{section['title']}</h2>
-            </div>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>{headers}</tr>
-                    </thead>
-                    <tbody>
-                        {''.join(rows)}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        """
-
-    def _render_chart_section(self, section):
-        if section['chart_type'] == 'bar':
-            # 简单的条形图
-            data = section['data']
-            max_value = max(data.values()) if data else 1
-
-            bars = []
-            for label, value in data.items():
-                height_percentage = (value / max_value) * 100
-                bars.append(f"""
-                <div class="bar-item">
-                    <div class="bar" style="height: {height_percentage}%;"></div>
-                    <div class="bar-label">{label}: {value}</div>
-                </div>
-                """)
-
-            chart_html = f"""
-            <div class="chart-container">
-                <div class="bar-chart">
-                    {''.join(bars)}
-                </div>
-            </div>
-            """
-
-        return f"""
-        <div class="section">
-            <div class="section-title">
-                <span class="icon">{section['icon']}</span>
-                <h2>{section['title']}</h2>
-            </div>
-            {chart_html}
-        </div>
-        """
-
-
-# 使用示例
-def create_sample_dashboard():
-    # 创建生成器
-    generator = WebPageGenerator("陈大爷信息统计")
-
-    # 添加文本板块
-    generator.add_text_section(
-        "项目概述",
-        "这是一个基于小马学习Python生成的数据可视化看板的第一步尝试。"
-    )
-
-    # 添加指标板块
-    metrics = {
-        "总消息": "1,234",
-        "微博条数": "892",
-        "黑子热搜": "23.5%",
-        "CPF热搜": "¥45,678"
-    }
-    generator.add_metric_section("关键指标", metrics)
-
-    # 添加图表板块
-    chart_data = {
-        "周一": 120,
-        "周二": 150,
-        "周三": 180,
-        "周四": 170,
-        "周五": 200,
-        "周六": 190,
-        "周日": 160
-    }
-    generator.add_chart_section("周访问量统计", chart_data, 'bar')
-
-    # 添加表格板块
-    df = pd.DataFrame({
-        '产品': ['产品A', '产品B', '产品C', '产品D'],
-        '销量': [1200, 950, 2100, 850],
-        '收入': [24000, 19000, 42000, 17000],
-        '库存': [150, 80, 200, 120]
-    })
-    generator.add_table_section("产品销售数据", df)
-
-    # 生成网页
-    generator.generate_html("dashboard.html")
-
-
-# 运行示例
-if __name__ == "__main__":
-    create_sample_dashboard()
+        
